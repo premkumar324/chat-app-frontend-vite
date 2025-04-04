@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { Send } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
-const socket = io("https://mern-chat-app-backend-zxx3.onrender.com");
+const socket = io("http://localhost:5000");
 
-const getUsername = (email) => email.split("@")[0];
+const getUsername = (email) => email?.split("@")[0];
 
 const ChatApp = ({ user }) => {
   const [message, setMessage] = useState("");
@@ -17,10 +17,18 @@ const ChatApp = ({ user }) => {
   const chatRef = useRef(null);
 
   useEffect(() => {
+    if (!user?.email) return;
+
     socket.emit("userJoined", user.email);
+    socket.emit("getMessages"); // ✅ Get messages from MongoDB on login
 
     socket.on("updateUsers", (users) => {
-      setOnlineUsers(users);
+      setOnlineUsers(users || []);
+    });
+
+    socket.on("loadMessages", (loadedMessages) => {
+      setMessages(loadedMessages || []);
+      scrollToBottom();
     });
 
     socket.on("chatMessage", (msg) => {
@@ -31,18 +39,18 @@ const ChatApp = ({ user }) => {
     socket.on("userTyping", (typingUser) => {
       if (typingUser !== user.email) {
         setTyping(`${getUsername(typingUser)} is typing...`);
-      } else {
-        setTyping("");
+        setTimeout(() => setTyping(""), 2000); // Auto-hide after 2s
       }
     });
 
     return () => {
       socket.emit("userLeft", user.email);
       socket.off("updateUsers");
+      socket.off("loadMessages");
       socket.off("chatMessage");
       socket.off("userTyping");
     };
-  }, [user.email]);
+  }, [user?.email]);
 
   const sendMessage = () => {
     if (message.trim()) {
@@ -69,12 +77,22 @@ const ChatApp = ({ user }) => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100">
-      {/* Header */}
       <header className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-lg font-semibold py-3 text-center shadow-md">
         Chat App
       </header>
 
-      {/* Online Users */}
+      <div className="flex justify-end p-2">
+        <button
+          onClick={() => {
+            localStorage.removeItem("chatUser");
+            window.location.reload();
+          }}
+          className="text-sm text-red-600 hover:underline"
+        >
+          Logout
+        </button>
+      </div>
+
       <div className="p-4 bg-white shadow-md">
         <h3 className="text-lg font-semibold">Online Users</h3>
         <ul>
@@ -86,40 +104,40 @@ const ChatApp = ({ user }) => {
         </ul>
       </div>
 
-      {/* Chat Box */}
       <div className="flex-1 p-4 overflow-y-auto max-h-[calc(100vh-250px)] space-y-3">
-        {messages.map((msg, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`w-fit max-w-[75%] px-4 py-2 rounded-lg ${
-              msg.sender === user.email
-                ? "bg-blue-500 text-white ml-auto"
-                : "bg-gray-200 text-gray-900 mr-auto"
-            }`}
-          >
-            <p className="text-xs font-semibold mb-1 text-gray-700">
-              {getUsername(msg.sender)}
-            </p>
-            <p className="break-words text-sm">{msg.text}</p>
-            <p className="text-[10px] text-right text-gray-500 mt-1">
-              {new Date(msg.timestamp).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
-          </motion.div>
-        ))}
+        {messages.map((msg, index) => {
+          const senderEmail = msg.sender || msg.user;
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`w-fit max-w-[75%] px-4 py-2 rounded-lg ${
+                senderEmail === user.email
+                  ? "bg-blue-500 text-white ml-auto"
+                  : "bg-gray-200 text-gray-900 mr-auto"
+              }`}
+            >
+              <p className="text-xs font-semibold mb-1 text-gray-700">
+                {getUsername(senderEmail)}
+              </p>
+              <p className="break-words text-sm">{msg.text}</p>
+              <p className="text-[10px] text-right text-gray-500 mt-1">
+                {new Date(msg.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </motion.div>
+          );
+        })}
         <div ref={chatRef}></div>
       </div>
 
-      {/* Typing Indicator */}
       {typing && (
         <p className="text-sm text-gray-500 text-center mb-1">{typing}</p>
       )}
 
-      {/* Message Input */}
       <div className="flex items-center p-4 bg-white shadow-lg relative">
         <button onClick={() => setShowEmoji(!showEmoji)} className="mr-2">
           😀
