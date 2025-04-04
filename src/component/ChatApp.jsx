@@ -16,10 +16,12 @@ const ChatApp = () => {
     // Get unique socket ID when connected
     socket.on("connect", () => {
       setUserId(socket.id);
+      console.log("Connected with ID:", socket.id); // Debugging
     });
 
     // Receive messages from the server
     socket.on("chatMessage", (msg) => {
+      console.log("Received message:", msg); // Debugging
       setMessages((prevMessages) => [...prevMessages, msg]);
       scrollToBottom();
     });
@@ -34,7 +36,6 @@ const ChatApp = () => {
       const msgData = { text: message, senderId: userId }; // Track sender
       socket.emit("chatMessage", msgData);
       setMessage("");
-      scrollToBottom();
     }
   };
 
@@ -70,11 +71,17 @@ const ChatApp = () => {
             key={index}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`max-w-xs p-3 rounded-xl text-white text-sm shadow-lg ${
-              msg.senderId === userId ? "bg-blue-500 self-end" : "bg-gray-500 self-start"
+            className={`flex w-full ${
+              msg.senderId === userId ? "justify-end" : "justify-start"
             }`}
           >
-            {msg.text}
+            <div
+              className={`max-w-xs p-3 rounded-xl text-white text-sm shadow-lg ${
+                msg.senderId === userId ? "bg-blue-500" : "bg-gray-500"
+              }`}
+            >
+              {msg.text}
+            </div>
           </motion.div>
         ))}
         <div ref={chatRef}></div>
