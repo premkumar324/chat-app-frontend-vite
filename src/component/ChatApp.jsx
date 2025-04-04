@@ -8,10 +8,17 @@ const socket = io("https://mern-chat-app-backend-zxx3.onrender.com"); // Connect
 const ChatApp = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [userId, setUserId] = useState(null); // Unique user ID
   const chatRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
+    // Get unique socket ID when connected
+    socket.on("connect", () => {
+      setUserId(socket.id);
+    });
+
+    // Receive messages from the server
     socket.on("chatMessage", (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
       scrollToBottom();
@@ -24,7 +31,8 @@ const ChatApp = () => {
 
   const sendMessage = () => {
     if (message.trim()) {
-      socket.emit("chatMessage", message);
+      const msgData = { text: message, senderId: userId }; // Track sender
+      socket.emit("chatMessage", msgData);
       setMessage("");
       scrollToBottom();
     }
@@ -40,7 +48,6 @@ const ChatApp = () => {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerHeight < 600) {
-        // When keyboard opens (height reduces), scroll down
         setTimeout(() => scrollToBottom(), 300);
       }
     };
@@ -64,10 +71,10 @@ const ChatApp = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={`max-w-xs p-3 rounded-xl text-white text-sm shadow-lg ${
-              index % 2 === 0 ? "bg-blue-500 self-end" : "bg-gray-500 self-start"
+              msg.senderId === userId ? "bg-blue-500 self-end" : "bg-gray-500 self-start"
             }`}
           >
-            {msg}
+            {msg.text}
           </motion.div>
         ))}
         <div ref={chatRef}></div>
