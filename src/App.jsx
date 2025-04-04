@@ -1,7 +1,19 @@
-import ChatApp from "./component/ChatApp";
+import React, { useState } from "react";
+import Auth from "./components/Auth";
+import ChatApp from "./components/ChatApp";
 
-function App() {
-  return <ChatApp />;
-}
+const App = () => {
+  const [user, setUser] = useState(null);
+
+  return (
+    <div>
+      {!user ? (
+        <Auth setUser={setUser} />
+      ) : (
+        <ChatApp user={user} />
+      )}
+    </div>
+  );
+};
 
 export default App;
