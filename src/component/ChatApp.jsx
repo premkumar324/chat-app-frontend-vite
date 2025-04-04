@@ -3,14 +3,13 @@ import { io } from "socket.io-client";
 import { motion } from "framer-motion";
 import { Send } from "lucide-react";
 
-
-
 const socket = io("https://mern-chat-app-backend-zxx3.onrender.com"); // Connect to backend
 
 const ChatApp = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const chatRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     socket.on("chatMessage", (msg) => {
@@ -37,6 +36,19 @@ const ChatApp = () => {
     }, 100);
   };
 
+  // Prevent chat from jumping up on mobile keyboard open
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerHeight < 600) {
+        // When keyboard opens (height reduces), scroll down
+        setTimeout(() => scrollToBottom(), 300);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100">
       {/* Header */}
@@ -52,9 +64,7 @@ const ChatApp = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={`max-w-xs p-3 rounded-xl text-white text-sm shadow-lg ${
-              index % 2 === 0
-                ? "bg-blue-500 self-end"
-                : "bg-gray-500 self-start"
+              index % 2 === 0 ? "bg-blue-500 self-end" : "bg-gray-500 self-start"
             }`}
           >
             {msg}
@@ -64,8 +74,9 @@ const ChatApp = () => {
       </div>
 
       {/* Input Box */}
-      <div className="flex items-center p-4 bg-white shadow-lg">
+      <div className="flex items-center p-4 bg-white shadow-lg fixed bottom-0 w-full">
         <input
+          ref={inputRef}
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
