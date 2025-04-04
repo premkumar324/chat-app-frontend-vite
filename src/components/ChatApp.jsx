@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Send } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://mern-chat-app-backend-zxx3.onrender.com");
 
 const getUsername = (email) => email?.split("@")[0];
 
